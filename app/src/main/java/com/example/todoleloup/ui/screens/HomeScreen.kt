@@ -2,6 +2,7 @@ package com.example.todoleloup.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,17 +28,17 @@ import com.example.todoleloup.ui.theme.irishGroverFont
 
 @Composable
 fun HomeScreen(
-    onNavigateToCreateTask: () -> Unit
+    onNavigateToCreateTask: () -> Unit,
+    tasks: List<Task>,
+    onToggleTaskCompleted: (Task) -> Unit
 ) {
     var selectedFilter by remember { mutableStateOf(0) }
 
-    // Données mockées pour la liste
-    val mockTasks = remember {
-        listOf(
-            Task(1, "Faire qql chose", isCompleted = true, isUrgent = false),
-            Task(2, "Faire qql chose", isCompleted = true, isUrgent = false),
-            Task(3, "Faire qql chose", isCompleted = true, isUrgent = false)
-        )
+    val filteredTasks = when (selectedFilter) {
+        1 -> tasks.filter { !it.isCompleted }
+        2 -> tasks.filter { it.isUrgent }
+        3 -> tasks.filter { it.isCompleted }
+        else -> tasks
     }
 
     Column(
@@ -75,7 +76,23 @@ fun HomeScreen(
             fontFamily = irishGroverFont
         )
 
-        TaskList(tasks = mockTasks)
+        if (filteredTasks.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Aucune tache pour le moment",
+                    color = TextSecondary,
+                    fontSize = 14.sp,
+                    fontFamily = irishGroverFont
+                )
+            }
+        } else {
+            TaskList(tasks = filteredTasks, onToggleTaskCompleted = onToggleTaskCompleted)
+        }
     }
 
     // Bouton flottant pour créer une tâche
@@ -267,18 +284,18 @@ fun FilterButton(
 }
 
 @Composable
-fun TaskList(tasks: List<Task>) {
+fun TaskList(tasks: List<Task>, onToggleTaskCompleted: (Task) -> Unit) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(tasks) { task ->
-            TaskItem(task = task)
+            TaskItem(task = task, onToggleTaskCompleted = onToggleTaskCompleted)
         }
     }
 }
 
 @Composable
-fun TaskItem(task: Task) {
+fun TaskItem(task: Task, onToggleTaskCompleted: (Task) -> Unit) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -300,15 +317,25 @@ fun TaskItem(task: Task) {
                     .background(Color.Transparent)
                     .then(
                         Modifier.padding(2.dp)
-                    ),
+                    )
+                    .clickable { onToggleTaskCompleted(task) },
                 contentAlignment = Alignment.Center
             ) {
                 Surface(
                     modifier = Modifier.size(28.dp),
                     shape = CircleShape,
-                    color = Color.Transparent,
+                    color = if (task.isCompleted) CyanPrimary else Color.Transparent,
                     border = BorderStroke(2.dp, TextSecondary)
-                ) {}
+                ) {
+                    if (task.isCompleted) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Tache terminee",
+                            tint = Color.Black,
+                            modifier = Modifier.padding(4.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.width(16.dp))

@@ -68,6 +68,16 @@ fun TodoLeLoupApp() {
                         HomeScreen(
                             onNavigateToCreateTask = {
                                 currentScreen = Screen.CreateTask
+                            },
+                            tasks = tasks,
+                            onToggleTaskCompleted = { taskToToggle ->
+                                tasks = tasks.map { task ->
+                                    if (task.id == taskToToggle.id) {
+                                        task.copy(isCompleted = !task.isCompleted)
+                                    } else {
+                                        task
+                                    }
+                                }
                             }
                         )
                     }
