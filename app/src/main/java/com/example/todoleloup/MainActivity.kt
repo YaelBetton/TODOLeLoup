@@ -18,6 +18,7 @@ import com.example.todoleloup.data.Task
 import com.example.todoleloup.ui.navigation.Screen
 import com.example.todoleloup.ui.screens.CreateTaskScreen
 import com.example.todoleloup.ui.screens.HomeScreen
+import com.example.todoleloup.ui.screens.ShopScreen
 import com.example.todoleloup.ui.theme.*
 
 class MainActivity : ComponentActivity() {
@@ -46,14 +47,14 @@ fun TodoLeLoupApp() {
             modifier = Modifier.fillMaxSize(),
             containerColor = DarkBackground,
             bottomBar = {
-                if (currentScreen == Screen.Home) {
+                if (currentScreen == Screen.Home || currentScreen == Screen.Shop) {
                     BottomNavigationBar(
                         selectedTab = selectedTab,
                         onTabSelected = {
                             selectedTab = it
                             currentScreen = when (it) {
                                 0 -> Screen.Home
-                                1 -> Screen.Profile
+                                1 -> Screen.Shop
                                 else -> Screen.Home
                             }
                         }
@@ -86,13 +87,8 @@ fun TodoLeLoupApp() {
                             }
                         )
                     }
-                    Screen.Profile -> {
-                        // Page profil (à implémenter plus tard)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(DarkBackground)
-                        )
+                    Screen.Shop -> {
+                        ShopScreen()
                     }
                 }
             }
@@ -130,8 +126,8 @@ fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
                 onClick = { onTabSelected(1) }
             ) {
                 Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Profil",
+                    imageVector = Icons.Default.ShoppingCart,
+                    contentDescription = "Boutique",
                     tint = if (selectedTab == 1) CyanPrimary else TextSecondary,
                     modifier = Modifier.size(28.dp)
                 )
