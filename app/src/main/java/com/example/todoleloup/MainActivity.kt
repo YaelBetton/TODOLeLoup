@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.example.todoleloup.data.Task
 import com.example.todoleloup.ui.navigation.Screen
 import com.example.todoleloup.ui.screens.CreateTaskScreen
+import com.example.todoleloup.ui.screens.EditTaskScreen
 import com.example.todoleloup.ui.screens.HomeScreen
 import com.example.todoleloup.ui.screens.ShopScreen
 import com.example.todoleloup.ui.theme.*
@@ -38,6 +39,7 @@ fun TodoLeLoupApp() {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Home) }
     var selectedTab by remember { mutableStateOf(0) }
     var tasks by remember { mutableStateOf(listOf<Task>()) }
+    var editingTaskId by remember { mutableStateOf<Int?>(null) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -78,6 +80,10 @@ fun TodoLeLoupApp() {
                                         task
                                     }
                                 }
+                            },
+                            onEditTask = { taskToEdit ->
+                                editingTaskId = taskToEdit.id
+                                currentScreen = Screen.EditTask
                             }
                         )
                     }
@@ -96,6 +102,34 @@ fun TodoLeLoupApp() {
                                 tasks = tasks + newTask
                             }
                         )
+                    }
+                    Screen.EditTask -> {
+                        val taskToEdit = tasks.find { it.id == editingTaskId }
+                        LaunchedEffect(taskToEdit) {
+                            if (taskToEdit == null) {
+                                currentScreen = Screen.Home
+                                editingTaskId = null
+                            }
+                        }
+                        if (taskToEdit != null) {
+                            EditTaskScreen(
+                                initialTitle = taskToEdit.title,
+                                initialIsUrgent = taskToEdit.isUrgent,
+                                onNavigateBack = {
+                                    currentScreen = Screen.Home
+                                    editingTaskId = null
+                                },
+                                onTaskUpdated = { newTitle, newIsUrgent ->
+                                    tasks = tasks.map { task ->
+                                        if (task.id == taskToEdit.id) {
+                                            task.copy(title = newTitle, isUrgent = newIsUrgent)
+                                        } else {
+                                            task
+                                        }
+                                    }
+                                }
+                            )
+                        }
                     }
                     Screen.Shop -> {
                         ShopScreen()

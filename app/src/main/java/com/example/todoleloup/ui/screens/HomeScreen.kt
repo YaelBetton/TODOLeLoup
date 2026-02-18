@@ -30,7 +30,8 @@ import com.example.todoleloup.ui.theme.irishGroverFont
 fun HomeScreen(
     onNavigateToCreateTask: () -> Unit,
     tasks: List<Task>,
-    onToggleTaskCompleted: (Task) -> Unit
+    onToggleTaskCompleted: (Task) -> Unit,
+    onEditTask: (Task) -> Unit
 ) {
     var selectedFilter by remember { mutableStateOf(0) }
 
@@ -91,7 +92,11 @@ fun HomeScreen(
                 )
             }
         } else {
-            TaskList(tasks = filteredTasks, onToggleTaskCompleted = onToggleTaskCompleted)
+            TaskList(
+                tasks = filteredTasks,
+                onToggleTaskCompleted = onToggleTaskCompleted,
+                onEditTask = onEditTask
+            )
         }
     }
 
@@ -284,18 +289,32 @@ fun FilterButton(
 }
 
 @Composable
-fun TaskList(tasks: List<Task>, onToggleTaskCompleted: (Task) -> Unit) {
+fun TaskList(
+    tasks: List<Task>,
+    onToggleTaskCompleted: (Task) -> Unit,
+    onEditTask: (Task) -> Unit
+) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(tasks) { task ->
-            TaskItem(task = task, onToggleTaskCompleted = onToggleTaskCompleted)
+            TaskItem(
+                task = task,
+                onToggleTaskCompleted = onToggleTaskCompleted,
+                onEditTask = onEditTask
+            )
         }
     }
 }
 
 @Composable
-fun TaskItem(task: Task, onToggleTaskCompleted: (Task) -> Unit) {
+fun TaskItem(
+    task: Task,
+    onToggleTaskCompleted: (Task) -> Unit,
+    onEditTask: (Task) -> Unit
+) {
+    var isMenuExpanded by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -373,12 +392,30 @@ fun TaskItem(task: Task, onToggleTaskCompleted: (Task) -> Unit) {
             }
 
             // Menu trois points
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "Plus d'options",
-                tint = TextSecondary,
-                modifier = Modifier.size(24.dp)
-            )
+            Box {
+                IconButton(
+                    onClick = { isMenuExpanded = true }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Plus d'options",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                DropdownMenu(
+                    expanded = isMenuExpanded,
+                    onDismissRequest = { isMenuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Modifier") },
+                        onClick = {
+                            isMenuExpanded = false
+                            onEditTask(task)
+                        }
+                    )
+                }
+            }
         }
     }
 }
