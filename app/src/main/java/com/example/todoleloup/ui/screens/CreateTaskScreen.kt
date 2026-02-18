@@ -4,15 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.todoleloup.ui.theme.irishGroverFont
 import com.example.todoleloup.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -22,127 +23,201 @@ fun CreateTaskScreen(
     onTaskCreated: (String, Boolean) -> Unit
 ) {
     var taskTitle by remember { mutableStateOf("") }
+    var dueDateText by remember { mutableStateOf("") }
+    var dueTimeText by remember { mutableStateOf("") }
     var isUrgent by remember { mutableStateOf(false) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
     ) {
-        // Top App Bar
-        TopAppBar(
-            title = {
+        Card(
+            modifier = Modifier
+                .padding(20.dp)
+                .align(Alignment.Center),
+            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
                 Text(
-                    text = "Nouvelle tâche",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "Nouvelle Tache",
+                    color = TextPrimary,
+                    fontSize = 22.sp,
+                    fontFamily = irishGroverFont
                 )
-            },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Retour",
-                        tint = Color.White
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "TITRE",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                OutlinedTextField(
+                    value = taskTitle,
+                    onValueChange = { taskTitle = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = {
+                        Text(
+                            text = "Ex: Faire les courses...",
+                            color = TextSecondary
+                        )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = CyanPrimary,
+                        unfocusedBorderColor = TextSecondary,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        cursorColor = CyanPrimary
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "DATE LIMITE",
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = dueDateText,
+                            onValueChange = { dueDateText = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = {
+                                Text(text = "jj/mm/aaaa", color = TextSecondary)
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.DateRange,
+                                    contentDescription = "Date",
+                                    tint = TextSecondary
+                                )
+                            },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = CyanPrimary,
+                                unfocusedBorderColor = TextSecondary,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                cursorColor = CyanPrimary
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "HEURE",
+                            color = TextSecondary,
+                            fontSize = 12.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = dueTimeText,
+                            onValueChange = { dueTimeText = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = {
+                                Text(text = "--:--", color = TextSecondary)
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.DateRange,
+                                    contentDescription = "Heure",
+                                    tint = TextSecondary
+                                )
+                            },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = CyanPrimary,
+                                unfocusedBorderColor = TextSecondary,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                cursorColor = CyanPrimary
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Checkbox(
+                        checked = isUrgent,
+                        onCheckedChange = { isUrgent = it },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = CyanPrimary,
+                            uncheckedColor = TextSecondary,
+                            checkmarkColor = Color.Black
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Marquer comme Urgent",
+                        color = TextPrimary,
+                        fontSize = 14.sp
                     )
                 }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = DarkSurface
-            )
-        )
 
-        // Contenu
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp)
-        ) {
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Titre de la tâche
-            Text(
-                text = "Titre de la tâche",
-                color = TextPrimary,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            OutlinedTextField(
-                value = taskTitle,
-                onValueChange = { taskTitle = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(
-                        text = "Entrez le titre de la tâche",
-                        color = TextSecondary
-                    )
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = CyanPrimary,
-                    unfocusedBorderColor = TextSecondary,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    cursorColor = CyanPrimary
-                ),
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Checkbox urgente
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Checkbox(
-                    checked = isUrgent,
-                    onCheckedChange = { isUrgent = it },
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = CyanPrimary,
-                        uncheckedColor = TextSecondary,
-                        checkmarkColor = Color.Black
-                    )
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Marquer comme urgent",
-                    color = TextPrimary,
-                    fontSize = 16.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Bouton créer
-            Button(
-                onClick = {
-                    if (taskTitle.isNotBlank()) {
-                        onTaskCreated(taskTitle, isUrgent)
-                        onNavigateBack()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = onNavigateBack,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = DarkSurface,
+                            contentColor = TextPrimary
+                        ),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text(text = "Annuler", textAlign = TextAlign.Center)
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = CyanPrimary,
-                    contentColor = Color.Black
-                ),
-                shape = RoundedCornerShape(16.dp),
-                enabled = taskTitle.isNotBlank()
-            ) {
-                Text(
-                    text = "Créer la tâche",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                    Button(
+                        onClick = {
+                            if (taskTitle.isNotBlank()) {
+                                onTaskCreated(taskTitle, isUrgent)
+                                onNavigateBack()
+                            }
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = CyanPrimary,
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        enabled = taskTitle.isNotBlank()
+                    ) {
+                        Text(text = "Ajouter", textAlign = TextAlign.Center)
+                    }
+                }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
-
