@@ -22,7 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.todoleloup.R
+import com.example.todoleloup.data.Priority
 import com.example.todoleloup.data.Task
+import com.example.todoleloup.data.TaskStatus
 import com.example.todoleloup.ui.theme.*
 import com.example.todoleloup.ui.theme.irishGroverFont
 
@@ -36,9 +38,9 @@ fun HomeScreen(
     var selectedFilter by remember { mutableStateOf(0) }
 
     val filteredTasks = when (selectedFilter) {
-        1 -> tasks.filter { !it.isCompleted }
-        2 -> tasks.filter { it.isUrgent }
-        3 -> tasks.filter { it.isCompleted }
+        1 -> tasks.filter { it.status == TaskStatus.TODO }
+        2 -> tasks.filter { it.priority == Priority.HIGH }
+        3 -> tasks.filter { it.status == TaskStatus.DONE }
         else -> tasks
     }
 
@@ -343,10 +345,10 @@ fun TaskItem(
                 Surface(
                     modifier = Modifier.size(28.dp),
                     shape = CircleShape,
-                    color = if (task.isCompleted) CyanPrimary else Color.Transparent,
+                    color = if (task.status == TaskStatus.DONE) CyanPrimary else Color.Transparent,
                     border = BorderStroke(2.dp, TextSecondary)
                 ) {
-                    if (task.isCompleted) {
+                    if (task.status == TaskStatus.DONE) {
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Tache terminee",
@@ -372,7 +374,7 @@ fun TaskItem(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 // Badge "FAIT"
-                if (task.isCompleted) {
+                if (task.status == TaskStatus.DONE) {
                     Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = Color.Transparent,

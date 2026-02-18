@@ -14,6 +14,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.todoleloup.data.Priority
+import com.example.todoleloup.data.RecurrenceType
+import com.example.todoleloup.data.TaskStatus
 import com.example.todoleloup.data.Task
 import com.example.todoleloup.ui.navigation.Screen
 import com.example.todoleloup.ui.screens.CreateTaskScreen
@@ -75,7 +78,12 @@ fun TodoLeLoupApp() {
                             onToggleTaskCompleted = { taskToToggle ->
                                 tasks = tasks.map { task ->
                                     if (task.id == taskToToggle.id) {
-                                        task.copy(isCompleted = !task.isCompleted)
+                                        val newStatus = if (task.status == TaskStatus.DONE) {
+                                            TaskStatus.TODO
+                                        } else {
+                                            TaskStatus.DONE
+                                        }
+                                        task.copy(status = newStatus)
                                     } else {
                                         task
                                     }
@@ -93,11 +101,20 @@ fun TodoLeLoupApp() {
                                 currentScreen = Screen.Home
                             },
                             onTaskCreated = { title, isUrgent ->
+                                val priority = if (isUrgent) {
+                                    Priority.HIGH
+                                } else {
+                                    Priority.MEDIUM
+                                }
                                 val newTask = Task(
                                     id = tasks.size + 1,
                                     title = title,
-                                    isCompleted = false,
-                                    isUrgent = isUrgent
+                                    description = "",
+                                    deadlineDate = null,
+                                    deadlineTime = null,
+                                    status = TaskStatus.TODO,
+                                    priority = priority,
+                                    recurrence = RecurrenceType.NONE
                                 )
                                 tasks = tasks + newTask
                             }
@@ -114,15 +131,20 @@ fun TodoLeLoupApp() {
                         if (taskToEdit != null) {
                             EditTaskScreen(
                                 initialTitle = taskToEdit.title,
-                                initialIsUrgent = taskToEdit.isUrgent,
+                                initialIsUrgent = taskToEdit.priority == Priority.HIGH,
                                 onNavigateBack = {
                                     currentScreen = Screen.Home
                                     editingTaskId = null
                                 },
                                 onTaskUpdated = { newTitle, newIsUrgent ->
+                                    val updatedPriority = if (newIsUrgent) {
+                                        Priority.HIGH
+                                    } else {
+                                        Priority.MEDIUM
+                                    }
                                     tasks = tasks.map { task ->
                                         if (task.id == taskToEdit.id) {
-                                            task.copy(title = newTitle, isUrgent = newIsUrgent)
+                                            task.copy(title = newTitle, priority = updatedPriority)
                                         } else {
                                             task
                                         }
