@@ -34,6 +34,14 @@ data class Task(
         val threshold = now.plusHours(thresholdHours.toLong())
         return !deadline.isBefore(now) && !deadline.isAfter(threshold)
     }
+
+    fun isUrgent(): Boolean {
+        // Une tâche est urgente si la date est passée (peu importe la priorité)
+        if (status == TaskStatus.DONE) {
+            return false
+        }
+        return isOverdue()
+    }
 }
 
 enum class TaskStatus {

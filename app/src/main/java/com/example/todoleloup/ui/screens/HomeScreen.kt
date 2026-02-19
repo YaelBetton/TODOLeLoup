@@ -27,6 +27,8 @@ import com.example.todoleloup.data.Task
 import com.example.todoleloup.data.TaskStatus
 import com.example.todoleloup.ui.theme.*
 import com.example.todoleloup.ui.theme.irishGroverFont
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomeScreen(
@@ -39,7 +41,7 @@ fun HomeScreen(
 
     val filteredTasks = when (selectedFilter) {
         1 -> tasks.filter { it.status == TaskStatus.TODO }
-        2 -> tasks.filter { it.priority == Priority.HIGH }
+        2 -> tasks.filter { it.isUrgent() }
         3 -> tasks.filter { it.status == TaskStatus.DONE }
         else -> tasks
     }
@@ -373,22 +375,86 @@ fun TaskItem(
                     fontFamily = impactFont
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                // Badge "FAIT"
-                if (task.status == TaskStatus.DONE) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color.Transparent,
-                        border = BorderStroke(2.dp, CyanPrimary),
-                        modifier = Modifier.wrapContentWidth()
-                    ) {
-                        Text(
-                            text = "FAIT",
-                            color = CyanPrimary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            fontFamily = irishGroverFont
-                        )
+
+                // Date et Badges sur la même ligne
+                Row(
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Affichage de la date et heure
+                    if (task.deadlineDate != null || task.deadlineTime != null) {
+                        val dateStr = if (task.deadlineDate != null && task.deadlineTime != null) {
+                            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+                            val dateTime = LocalDateTime.of(task.deadlineDate!!, task.deadlineTime!!)
+                            dateTime.format(formatter)
+                        } else if (task.deadlineDate != null) {
+                            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                            task.deadlineDate?.format(formatter)
+                        } else {
+                            val formatter = DateTimeFormatter.ofPattern("HH:mm")
+                            task.deadlineTime?.format(formatter)
+                        }
+
+                        if (dateStr != null) {
+                            Text(
+                                text = dateStr,
+                                color = TextSecondary,
+                                fontSize = 12.sp,
+                                fontFamily = irishGroverFont
+                            )
+                        }
+                    }
+
+                    // Badge "FAIT", "DATE PASSÉE" ou "PAS FAIT"
+                    if (task.status == TaskStatus.DONE) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.Transparent,
+                            border = BorderStroke(2.dp, CyanPrimary),
+                            modifier = Modifier.wrapContentWidth()
+                        ) {
+                            Text(
+                                text = "FAIT",
+                                color = CyanPrimary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                fontFamily = irishGroverFont
+                            )
+                        }
+                    } else if (task.isOverdue()) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.Transparent,
+                            border = BorderStroke(2.dp, Color.Red),
+                            modifier = Modifier.wrapContentWidth()
+                        ) {
+                            Text(
+                                text = "DATE PASSÉE",
+                                color = Color.Red,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                fontFamily = irishGroverFont
+                            )
+                        }
+                    } else {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.Transparent,
+                            border = BorderStroke(2.dp, TextSecondary),
+                            modifier = Modifier.wrapContentWidth()
+                        ) {
+                            Text(
+                                text = "PAS FAIT",
+                                color = TextSecondary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                fontFamily = irishGroverFont
+                            )
+                        }
                     }
                 }
             }

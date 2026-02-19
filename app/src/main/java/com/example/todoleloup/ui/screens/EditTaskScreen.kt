@@ -16,18 +16,44 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.todoleloup.ui.theme.*
 import com.example.todoleloup.ui.theme.irishGroverFont
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+// Fonction pour valider le format de la date
+fun isValidDateEdit(dateStr: String): Boolean {
+    return try {
+        val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+        LocalDate.parse(dateStr, dateFormatter)
+        true
+    } catch (e: Exception) {
+        false
+    }
+}
+
+// Fonction pour valider le format de l'heure
+fun isValidTimeEdit(timeStr: String): Boolean {
+    return try {
+        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+        java.time.LocalTime.parse(timeStr, timeFormatter)
+        true
+    } catch (e: Exception) {
+        false
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTaskScreen(
     initialTitle: String,
     initialIsUrgent: Boolean,
+    initialDeadlineDate: String,
+    initialDeadlineTime: String,
     onNavigateBack: () -> Unit,
-    onTaskUpdated: (String, Boolean) -> Unit
+    onTaskUpdated: (String, String, String, Boolean) -> Unit
 ) {
     var taskTitle by remember { mutableStateOf(initialTitle) }
-    var dueDateText by remember { mutableStateOf("") }
-    var dueTimeText by remember { mutableStateOf("") }
+    var dueDateText by remember { mutableStateOf(initialDeadlineDate) }
+    var dueTimeText by remember { mutableStateOf(initialDeadlineTime) }
     var isUrgent by remember { mutableStateOf(initialIsUrgent) }
 
     Box(
@@ -202,8 +228,8 @@ fun EditTaskScreen(
                     }
                     Button(
                         onClick = {
-                            if (taskTitle.isNotBlank()) {
-                                onTaskUpdated(taskTitle, isUrgent)
+                            if (taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDateEdit(dueDateText) && dueTimeText.isNotBlank() && isValidTimeEdit(dueTimeText)) {
+                                onTaskUpdated(taskTitle, dueDateText, dueTimeText, isUrgent)
                                 onNavigateBack()
                             }
                         },
@@ -215,7 +241,7 @@ fun EditTaskScreen(
                             contentColor = Color.Black
                         ),
                         shape = RoundedCornerShape(14.dp),
-                        enabled = taskTitle.isNotBlank()
+                        enabled = taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDateEdit(dueDateText) && dueTimeText.isNotBlank() && isValidTimeEdit(dueTimeText)
                     ) {
                         Text(text = "Enregistrer", textAlign = TextAlign.Center)
                     }

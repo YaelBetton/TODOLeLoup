@@ -15,12 +15,36 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.todoleloup.ui.theme.irishGroverFont
 import com.example.todoleloup.ui.theme.*
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+// Fonction pour valider le format de la date
+fun isValidDate(dateStr: String): Boolean {
+    return try {
+        val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+        LocalDate.parse(dateStr, dateFormatter)
+        true
+    } catch (e: Exception) {
+        false
+    }
+}
+
+// Fonction pour valider le format de l'heure
+fun isValidTime(timeStr: String): Boolean {
+    return try {
+        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+        java.time.LocalTime.parse(timeStr, timeFormatter)
+        true
+    } catch (e: Exception) {
+        false
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateTaskScreen(
     onNavigateBack: () -> Unit,
-    onTaskCreated: (String, Boolean) -> Unit
+    onTaskCreated: (String, String, String, Boolean) -> Unit
 ) {
     var taskTitle by remember { mutableStateOf("") }
     var dueDateText by remember { mutableStateOf("") }
@@ -199,8 +223,8 @@ fun CreateTaskScreen(
                     }
                     Button(
                         onClick = {
-                            if (taskTitle.isNotBlank()) {
-                                onTaskCreated(taskTitle, isUrgent)
+                            if (taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDate(dueDateText) && dueTimeText.isNotBlank() && isValidTime(dueTimeText)) {
+                                onTaskCreated(taskTitle, dueDateText, dueTimeText, isUrgent)
                                 onNavigateBack()
                             }
                         },
@@ -212,7 +236,7 @@ fun CreateTaskScreen(
                             contentColor = Color.Black
                         ),
                         shape = RoundedCornerShape(14.dp),
-                        enabled = taskTitle.isNotBlank()
+                        enabled = taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDate(dueDateText) && dueTimeText.isNotBlank() && isValidTime(dueTimeText)
                     ) {
                         Text(text = "Ajouter", textAlign = TextAlign.Center)
                     }

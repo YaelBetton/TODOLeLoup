@@ -24,6 +24,9 @@ import com.example.todoleloup.ui.screens.EditTaskScreen
 import com.example.todoleloup.ui.screens.HomeScreen
 import com.example.todoleloup.ui.screens.ShopScreen
 import com.example.todoleloup.ui.theme.*
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,18 +103,41 @@ fun TodoLeLoupApp() {
                             onNavigateBack = {
                                 currentScreen = Screen.Home
                             },
-                            onTaskCreated = { title, isUrgent ->
+                            onTaskCreated = { title, dateStr, timeStr, isUrgent ->
                                 val priority = if (isUrgent) {
                                     Priority.HIGH
                                 } else {
                                     Priority.MEDIUM
                                 }
+
+                                // Parsez la date (format jj/mm/aaaa)
+                                var deadlineDate: LocalDate? = null
+                                var deadlineTime: LocalTime? = null
+
+                                if (dateStr.isNotBlank()) {
+                                    try {
+                                        val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                                        deadlineDate = LocalDate.parse(dateStr, dateFormatter)
+                                    } catch (e: Exception) {
+                                        // Format invalide, ignore
+                                    }
+                                }
+
+                                if (timeStr.isNotBlank()) {
+                                    try {
+                                        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+                                        deadlineTime = LocalTime.parse(timeStr, timeFormatter)
+                                    } catch (e: Exception) {
+                                        // Format invalide, ignore
+                                    }
+                                }
+
                                 val newTask = Task(
                                     id = tasks.size + 1,
                                     title = title,
                                     description = "",
-                                    deadlineDate = null,
-                                    deadlineTime = null,
+                                    deadlineDate = deadlineDate,
+                                    deadlineTime = deadlineTime,
                                     status = TaskStatus.TODO,
                                     priority = priority,
                                     recurrence = RecurrenceType.NONE
@@ -129,22 +155,69 @@ fun TodoLeLoupApp() {
                             }
                         }
                         if (taskToEdit != null) {
+                            // Formater la date et l'heure existantes pour l'affichage
+                            val initialDateStr = if (taskToEdit.deadlineDate != null) {
+                                val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                                taskToEdit.deadlineDate.format(dateFormatter)
+                            } else {
+                                ""
+                            }
+
+                            val initialTimeStr = if (taskToEdit.deadlineTime != null) {
+                                val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+                                taskToEdit.deadlineTime.format(timeFormatter)
+                            } else {
+                                ""
+                            }
+
                             EditTaskScreen(
                                 initialTitle = taskToEdit.title,
                                 initialIsUrgent = taskToEdit.priority == Priority.HIGH,
+                                initialDeadlineDate = initialDateStr,
+                                initialDeadlineTime = initialTimeStr,
                                 onNavigateBack = {
                                     currentScreen = Screen.Home
                                     editingTaskId = null
                                 },
-                                onTaskUpdated = { newTitle, newIsUrgent ->
+                                onTaskUpdated = { newTitle, dateStr, timeStr, newIsUrgent ->
                                     val updatedPriority = if (newIsUrgent) {
                                         Priority.HIGH
                                     } else {
                                         Priority.MEDIUM
                                     }
+
+                                    // Parser la date (format jj/mm/aaaa)
+                                    var deadlineDate: LocalDate? = null
+                                    var deadlineTime: LocalTime? = null
+
+                                    if (dateStr.isNotBlank()) {
+                                        try {
+                                            val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                                            deadlineDate = LocalDate.parse(dateStr, dateFormatter)
+                                        } catch (e: Exception) {
+                                            // Format invalide, garde la date existante
+                                            deadlineDate = taskToEdit.deadlineDate
+                                        }
+                                    }
+
+                                    if (timeStr.isNotBlank()) {
+                                        try {
+                                            val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+                                            deadlineTime = LocalTime.parse(timeStr, timeFormatter)
+                                        } catch (e: Exception) {
+                                            // Format invalide, garde l'heure existante
+                                            deadlineTime = taskToEdit.deadlineTime
+                                        }
+                                    }
+
                                     tasks = tasks.map { task ->
                                         if (task.id == taskToEdit.id) {
-                                            task.copy(title = newTitle, priority = updatedPriority)
+                                            task.copy(
+                                                title = newTitle,
+                                                priority = updatedPriority,
+                                                deadlineDate = deadlineDate,
+                                                deadlineTime = deadlineTime
+                                            )
                                         } else {
                                             task
                                         }
