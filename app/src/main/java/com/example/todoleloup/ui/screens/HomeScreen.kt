@@ -38,6 +38,7 @@ fun HomeScreen(
     onEditTask: (Task) -> Unit
 ) {
     var selectedFilter by remember { mutableStateOf(0) }
+    var showNotifications by remember { mutableStateOf(true) }
 
     val filteredTasks = when (selectedFilter) {
         1 -> tasks.filter { it.status == TaskStatus.TODO }
@@ -46,61 +47,82 @@ fun HomeScreen(
         else -> tasks
     }
 
+    // Récupérer les tâches en retard
+    val overdueTasks = tasks.filter { it.isOverdue() && it.status != TaskStatus.DONE }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(DarkBackground)
-            .padding(horizontal = 20.dp)
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp)
+        ) {
+            Spacer(modifier = Modifier.height(24.dp))
 
-        // Header avec logo et titre
-        HeaderSection()
+            // Header avec logo, titre et bouton notification
+            HeaderSection(
+                overdueTasks = overdueTasks,
+                showNotifications = showNotifications,
+                onToggleNotifications = { showNotifications = !showNotifications }
+            )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // Barre de recherche
-        SearchBar()
+            // Zone de notifications (en dessous du titre)
+            if (showNotifications && overdueTasks.isNotEmpty()) {
+                NotificationBanner(
+                    overdueTasks = overdueTasks,
+                    onClose = { showNotifications = false }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
-        Spacer(modifier = Modifier.height(20.dp))
+            // Barre de recherche
+            SearchBar()
 
-        // Boutons de filtre
-        FilterButtons(
-            selectedFilter = selectedFilter,
-            onFilterSelected = { selectedFilter = it }
-        )
+            Spacer(modifier = Modifier.height(20.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
+            // Boutons de filtre
+            FilterButtons(
+                selectedFilter = selectedFilter,
+                onFilterSelected = { selectedFilter = it }
+            )
 
-        // Liste des tâches
-        Text(
-            text = "Liste des tâches",
-            color = TextSecondary,
-            fontSize = 14.sp,
-            modifier = Modifier.padding(bottom = 16.dp),
-            fontFamily = irishGroverFont
-        )
+            Spacer(modifier = Modifier.height(24.dp))
 
-        if (filteredTasks.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Aucune tache pour le moment",
-                    color = TextSecondary,
-                    fontSize = 14.sp,
-                    fontFamily = irishGroverFont
+            // Liste des tâches
+            Text(
+                text = "Liste des tâches",
+                color = TextSecondary,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 16.dp),
+                fontFamily = irishGroverFont
+            )
+
+            if (filteredTasks.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Aucune tache pour le moment",
+                        color = TextSecondary,
+                        fontSize = 14.sp,
+                        fontFamily = irishGroverFont
+                    )
+                }
+            } else {
+                TaskList(
+                    tasks = filteredTasks,
+                    onToggleTaskCompleted = onToggleTaskCompleted,
+                    onEditTask = onEditTask
                 )
             }
-        } else {
-            TaskList(
-                tasks = filteredTasks,
-                onToggleTaskCompleted = onToggleTaskCompleted,
-                onEditTask = onEditTask
-            )
         }
     }
 
@@ -128,45 +150,170 @@ fun HomeScreen(
 }
 
 @Composable
-fun HeaderSection() {
+fun HeaderSection(
+    overdueTasks: List<Task>,
+    showNotifications: Boolean,
+    onToggleNotifications: () -> Unit
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Logo lune
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(DarkSurface),
-            contentAlignment = Alignment.Center
+        // Logo et titre
+        Row(
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                 painter = painterResource(id = R.drawable.ic_moon),
-                 contentDescription = "Logo lune",
-                 tint = CyanPrimary,
-                 modifier = Modifier.size(28.dp)
-            )
+            // Logo lune
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(DarkSurface),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                     painter = painterResource(id = R.drawable.ic_moon),
+                     contentDescription = "Logo lune",
+                     tint = CyanPrimary,
+                     modifier = Modifier.size(28.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Titre
+            Row {
+                Text(
+                    text = "TODO",
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = irishGroverFont
+                )
+                Text(
+                    text = "LeLoup",
+                    color = CyanPrimary,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = irishGroverFont
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        // Bouton notification avec badge
+        Box {
+            IconButton(
+                onClick = onToggleNotifications,
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Notifications",
+                    tint = if (overdueTasks.isNotEmpty()) Color.Red else TextSecondary,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
 
-        // Titre
-        Row {
-            Text(
-                text = "TODO",
-                color = Color.White,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = irishGroverFont
-            )
-            Text(
-                text = "LeLoup",
-                color = CyanPrimary,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = irishGroverFont
-            )
+            // Badge avec le nombre de notifications
+            if (overdueTasks.isNotEmpty()) {
+                Surface(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .align(Alignment.TopEnd),
+                    shape = CircleShape,
+                    color = Color.Red
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Text(
+                            text = overdueTasks.size.toString(),
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NotificationBanner(
+    overdueTasks: List<Task>,
+    onClose: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = DarkSurface,
+        border = BorderStroke(2.dp, Color.Red)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // En-tête avec titre
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "●",
+                    color = Color.White,
+                    fontSize = 12.sp
+                )
+                Text(
+                    text = "NOTIFICATIONS (${overdueTasks.size})",
+                    color = Color.Red,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = impactFont
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Liste des tâches en retard
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                overdueTasks.take(3).forEach { task ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "●",
+                            color = Color.White,
+                            fontSize = 8.sp
+                        )
+                        Text(
+                            text = "En retard : ${task.title}",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontFamily = impactFont
+                        )
+                    }
+                }
+            }
+
+            // Afficher "et plus..." si plus de 3 tâches
+            if (overdueTasks.size > 3) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "et ${overdueTasks.size - 3} tâche(s) en retard",
+                    color = Color.Red,
+                    fontSize = 12.sp,
+                    fontFamily = irishGroverFont,
+                    modifier = Modifier.padding(start = 14.dp)
+                )
+            }
         }
     }
 }
@@ -324,7 +471,8 @@ fun TaskItem(
             .fillMaxWidth()
             .height(80.dp),
         shape = RoundedCornerShape(16.dp),
-        color = CardBackground
+        color = CardBackground,
+        border = if (task.isOverdue()) BorderStroke(2.dp, Color.Red) else null
     ) {
         Row(
             modifier = Modifier
@@ -431,7 +579,7 @@ fun TaskItem(
                             modifier = Modifier.wrapContentWidth()
                         ) {
                             Text(
-                                text = "DATE PASSÉE",
+                                text = "EN RETARD",
                                 color = Color.Red,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,

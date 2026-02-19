@@ -228,9 +228,13 @@ fun EditTaskScreen(
                     }
                     Button(
                         onClick = {
-                            if (taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDateEdit(dueDateText) && dueTimeText.isNotBlank() && isValidTimeEdit(dueTimeText)) {
-                                onTaskUpdated(taskTitle, dueDateText, dueTimeText, isUrgent)
-                                onNavigateBack()
+                            if (taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDateEdit(dueDateText)) {
+                                // L'heure est optionnelle, mais si elle est remplie, elle doit être valide
+                                val isTimeValid = dueTimeText.isBlank() || isValidTimeEdit(dueTimeText)
+                                if (isTimeValid) {
+                                    onTaskUpdated(taskTitle, dueDateText, dueTimeText, isUrgent)
+                                    onNavigateBack()
+                                }
                             }
                         },
                         modifier = Modifier
@@ -241,7 +245,7 @@ fun EditTaskScreen(
                             contentColor = Color.Black
                         ),
                         shape = RoundedCornerShape(14.dp),
-                        enabled = taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDateEdit(dueDateText) && dueTimeText.isNotBlank() && isValidTimeEdit(dueTimeText)
+                        enabled = taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDateEdit(dueDateText) && (dueTimeText.isBlank() || isValidTimeEdit(dueTimeText))
                     ) {
                         Text(text = "Enregistrer", textAlign = TextAlign.Center)
                     }

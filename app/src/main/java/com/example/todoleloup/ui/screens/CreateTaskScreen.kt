@@ -223,9 +223,13 @@ fun CreateTaskScreen(
                     }
                     Button(
                         onClick = {
-                            if (taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDate(dueDateText) && dueTimeText.isNotBlank() && isValidTime(dueTimeText)) {
-                                onTaskCreated(taskTitle, dueDateText, dueTimeText, isUrgent)
-                                onNavigateBack()
+                            if (taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDate(dueDateText)) {
+                                // L'heure est optionnelle, mais si elle est remplie, elle doit être valide
+                                val isTimeValid = dueTimeText.isBlank() || isValidTime(dueTimeText)
+                                if (isTimeValid) {
+                                    onTaskCreated(taskTitle, dueDateText, dueTimeText, isUrgent)
+                                    onNavigateBack()
+                                }
                             }
                         },
                         modifier = Modifier
@@ -236,7 +240,7 @@ fun CreateTaskScreen(
                             contentColor = Color.Black
                         ),
                         shape = RoundedCornerShape(14.dp),
-                        enabled = taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDate(dueDateText) && dueTimeText.isNotBlank() && isValidTime(dueTimeText)
+                        enabled = taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDate(dueDateText) && (dueTimeText.isBlank() || isValidTime(dueTimeText))
                     ) {
                         Text(text = "Ajouter", textAlign = TextAlign.Center)
                     }
