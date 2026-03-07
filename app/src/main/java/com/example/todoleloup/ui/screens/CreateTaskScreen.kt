@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.todoleloup.data.Priority
 import com.example.todoleloup.data.RecurrenceType
 import com.example.todoleloup.ui.theme.irishGroverFont
 import com.example.todoleloup.ui.theme.*
@@ -45,12 +46,12 @@ fun isValidTime(timeStr: String): Boolean {
 @Composable
 fun CreateTaskScreen(
     onNavigateBack: () -> Unit,
-    onTaskCreated: (String, String, String, Boolean, RecurrenceType) -> Unit
+    onTaskCreated: (String, String, String, Priority, RecurrenceType) -> Unit
 ) {
     var taskTitle by remember { mutableStateOf("") }
     var dueDateText by remember { mutableStateOf("") }
     var dueTimeText by remember { mutableStateOf("") }
-    var isUrgent by remember { mutableStateOf(false) }
+    var selectedPriority by remember { mutableStateOf(Priority.MEDIUM) }
     var selectedRecurrence by remember { mutableStateOf(RecurrenceType.NONE) }
     var recurrenceMenuExpanded by remember { mutableStateOf(false) }
 
@@ -184,25 +185,39 @@ fun CreateTaskScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                Text(
+                    text = "PRIORITÉ",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Checkbox(
-                        checked = isUrgent,
-                        onCheckedChange = { isUrgent = it },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = CyanPrimary,
-                            uncheckedColor = TextSecondary,
-                            checkmarkColor = Color.Black
-                        )
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Marquer comme Urgent",
-                        color = TextPrimary,
-                        fontSize = 14.sp
-                    )
+                    listOf(
+                        Priority.LOW to "Normale",
+                        Priority.MEDIUM to "Haute",
+                        Priority.HIGH to "Critique"
+                    ).forEach { (priority, label) ->
+                        val color = when (priority) {
+                            Priority.LOW -> PriorityLow
+                            Priority.MEDIUM -> PriorityMedium
+                            Priority.HIGH -> PriorityHigh
+                        }
+                        Button(
+                            onClick = { selectedPriority = priority },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (selectedPriority == priority) color else DarkSurface,
+                                contentColor = if (selectedPriority == priority) Color.White else TextSecondary
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 10.dp)
+                        ) {
+                            Text(text = label, fontSize = 12.sp, fontFamily = irishGroverFont)
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -280,7 +295,7 @@ fun CreateTaskScreen(
                                 // L'heure est optionnelle, mais si elle est remplie, elle doit être valide
                                 val isTimeValid = dueTimeText.isBlank() || isValidTime(dueTimeText)
                                 if (isTimeValid) {
-                                    onTaskCreated(taskTitle, dueDateText, dueTimeText, isUrgent, selectedRecurrence)
+                                    onTaskCreated(taskTitle, dueDateText, dueTimeText, selectedPriority, selectedRecurrence)
                                     onNavigateBack()
                                 }
                             }

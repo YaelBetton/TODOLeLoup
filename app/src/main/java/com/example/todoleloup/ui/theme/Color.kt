@@ -10,3 +10,9 @@ val CyanSecondary = Color(0xFF4DD4E8)
 val TextPrimary = Color(0xFFFFFFFF)
 val TextSecondary = Color(0xFF8892A6)
 val CardBackground = Color(0xFF1E2440)
+
+// Priority colors
+val PriorityLow = Color(0xFF4CAF50)      // Vert
+val PriorityMedium = Color(0xFFFF9800)   // Orange
+val PriorityHigh = Color(0xFFF44336)     // Rouge
+

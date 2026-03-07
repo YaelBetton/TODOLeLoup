@@ -70,11 +70,20 @@ fun HomeScreen(
         return !deadlineDate.isAfter(today)
     }
 
+    fun priorityOrder(p: Priority) = when (p) {
+        Priority.HIGH -> 0
+        Priority.MEDIUM -> 1
+        Priority.LOW -> 2
+    }
+
     val filteredTasks = when (selectedFilter) {
         1 -> tasks.filter { it.status == TaskStatus.TODO && it.isVisibleToday() }
+            .sortedBy { priorityOrder(it.priority) }
         2 -> tasks.filter { it.isUrgent() }
+            .sortedBy { priorityOrder(it.priority) }
         3 -> tasks.filter { it.status == TaskStatus.DONE }
         else -> tasks.filter { it.isVisibleToday() }
+            .sortedWith(compareBy({ it.status == TaskStatus.DONE }, { priorityOrder(it.priority) }))
     }
 
     // Récupérer les tâches en retard
@@ -174,10 +183,16 @@ fun HomeScreen(
             } else {
                 TaskList(
                     tasks = filteredTasks,
-                    onToggleTaskCompleted = onToggleTaskCompleted,
+                    onToggleTaskCompleted = { task ->
+                        // Déclencher l'effet AVANT le toggle, si la tâche va passer en DONE
+                        if (task.status != TaskStatus.DONE) {
+                            celebrateTrigger += 1
+                        }
+                        onToggleTaskCompleted(task)
+                    },
                     onEditTask = onEditTask,
                     onDeleteTask = onDeleteTask,
-                    onTaskCompleted = { celebrateTrigger += 1 }
+                    onTaskCompleted = {}
                 )
             }
         }
@@ -533,13 +548,11 @@ fun TaskItem(
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var previousStatus by remember(task.id) { mutableStateOf(task.status) }
 
-    LaunchedEffect(task.status) {
-        if (previousStatus != TaskStatus.DONE && task.status == TaskStatus.DONE) {
-            onTaskCompleted()
-        }
-        previousStatus = task.status
+    val priorityColor = when (task.priority) {
+        Priority.HIGH -> PriorityHigh
+        Priority.MEDIUM -> PriorityMedium
+        Priority.LOW -> PriorityLow
     }
 
     Surface(
@@ -550,6 +563,18 @@ fun TaskItem(
         color = CardBackground,
         border = if (task.isOverdue()) BorderStroke(2.dp, Color.Red) else null
     ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Barre de priorité colorée sur le côté gauche
+            Box(
+                modifier = Modifier
+                    .width(5.dp)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                    .background(priorityColor)
+            )
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -591,14 +616,29 @@ fun TaskItem(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = task.title,
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = impactFont
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+                // Titre + heure sur la même ligne
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = task.title,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = impactFont
+                    )
+                    if (task.deadlineTime != null) {
+                        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+                        Text(
+                            text = task.deadlineTime.format(timeFormatter),
+                            color = CyanPrimary,
+                            fontSize = 13.sp,
+                            fontFamily = irishGroverFont
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // Date et Badges sur la même ligne
                 Row(
@@ -606,28 +646,15 @@ fun TaskItem(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Affichage de la date et heure
-                    if (task.deadlineDate != null || task.deadlineTime != null) {
-                        val dateStr = if (task.deadlineDate != null && task.deadlineTime != null) {
-                            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-                            val dateTime = LocalDateTime.of(task.deadlineDate, task.deadlineTime)
-                            dateTime.format(formatter)
-                        } else if (task.deadlineDate != null) {
-                            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                            task.deadlineDate.format(formatter)
-                        } else {
-                            val formatter = DateTimeFormatter.ofPattern("HH:mm")
-                            task.deadlineTime?.format(formatter)
-                        }
-
-                        if (dateStr != null) {
-                            Text(
-                                text = dateStr,
-                                color = TextSecondary,
-                                fontSize = 12.sp,
-                                fontFamily = irishGroverFont
-                            )
-                        }
+                    // Affichage de la date uniquement
+                    if (task.deadlineDate != null) {
+                        val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                        Text(
+                            text = task.deadlineDate.format(dateFormatter),
+                            color = TextSecondary,
+                            fontSize = 12.sp,
+                            fontFamily = irishGroverFont
+                        )
                     }
 
                     // Badge "FAIT", "DATE PASSÉE" ou "PAS FAIT"
@@ -787,7 +814,8 @@ fun TaskItem(
                     }
                 )
             }
-        }
+        } // fin Row interne
+        } // fin Row externe (barre priorité)
     }
 }
 

@@ -12,7 +12,8 @@ data class Task(
     val deadlineTime: LocalTime?,
     val status: TaskStatus,
     val priority: Priority,
-    val recurrence: RecurrenceType
+    val recurrence: RecurrenceType,
+    val nextOccurrenceId: Int? = null  // ID de la prochaine occurrence créée lors du cochage
 ) {
     fun isOverdue(): Boolean {
         if (status == TaskStatus.DONE) {
