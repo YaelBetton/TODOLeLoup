@@ -79,18 +79,45 @@ fun TodoLeLoupApp() {
                             },
                             tasks = tasks,
                             onToggleTaskCompleted = { taskToToggle ->
+                                val today = java.time.LocalDate.now()
+                                var newRecurringTask: Task? = null
+
                                 tasks = tasks.map { task ->
                                     if (task.id == taskToToggle.id) {
-                                        val newStatus = if (task.status == TaskStatus.DONE) {
-                                            TaskStatus.TODO
+                                        if (task.status == TaskStatus.DONE) {
+                                            // Décocher → repasse en TODO
+                                            task.copy(status = TaskStatus.TODO)
                                         } else {
-                                            TaskStatus.DONE
+                                            // Cocher → si récurrente et deadline ≤ aujourd'hui,
+                                            // marquer DONE et préparer la prochaine occurrence
+                                            if (task.recurrence != RecurrenceType.NONE && task.deadlineDate != null
+                                                && !task.deadlineDate.isAfter(today)) {
+                                                val nextDate = when (task.recurrence) {
+                                                    RecurrenceType.DAILY -> task.deadlineDate.plusDays(1)
+                                                    RecurrenceType.WEEKLY -> task.deadlineDate.plusWeeks(1)
+                                                    RecurrenceType.MONTHLY -> task.deadlineDate.plusMonths(1)
+                                                    else -> null
+                                                }
+                                                if (nextDate != null) {
+                                                    newRecurringTask = task.copy(
+                                                        id = tasks.maxOf { it.id } + 1,
+                                                        status = TaskStatus.TODO,
+                                                        deadlineDate = nextDate
+                                                    )
+                                                }
+                                                // La tâche actuelle passe en DONE
+                                                task.copy(status = TaskStatus.DONE)
+                                            } else {
+                                                // Tâche récurrente dans le futur, ou non récurrente → DONE normalement
+                                                task.copy(status = TaskStatus.DONE)
+                                            }
                                         }
-                                        task.copy(status = newStatus)
                                     } else {
                                         task
                                     }
                                 }
+                                // Ajouter la prochaine occurrence si elle a été créée
+                                newRecurringTask?.let { tasks = tasks + it }
                             },
                             onEditTask = { taskToEdit ->
                                 editingTaskId = taskToEdit.id
@@ -109,7 +136,7 @@ fun TodoLeLoupApp() {
                             onNavigateBack = {
                                 currentScreen = Screen.Home
                             },
-                            onTaskCreated = { title, dateStr, timeStr, isUrgent ->
+                            onTaskCreated = { title, dateStr, timeStr, isUrgent, recurrence ->
                                 val priority = if (isUrgent) {
                                     Priority.HIGH
                                 } else {
@@ -146,7 +173,7 @@ fun TodoLeLoupApp() {
                                     deadlineTime = deadlineTime,
                                     status = TaskStatus.TODO,
                                     priority = priority,
-                                    recurrence = RecurrenceType.NONE
+                                    recurrence = recurrence
                                 )
                                 tasks = tasks + newTask
                             }
@@ -181,11 +208,12 @@ fun TodoLeLoupApp() {
                                 initialIsUrgent = taskToEdit.priority == Priority.HIGH,
                                 initialDeadlineDate = initialDateStr,
                                 initialDeadlineTime = initialTimeStr,
+                                initialRecurrence = taskToEdit.recurrence,
                                 onNavigateBack = {
                                     currentScreen = Screen.Home
                                     editingTaskId = null
                                 },
-                                onTaskUpdated = { newTitle, dateStr, timeStr, newIsUrgent ->
+                                onTaskUpdated = { newTitle, dateStr, timeStr, newIsUrgent, newRecurrence ->
                                     val updatedPriority = if (newIsUrgent) {
                                         Priority.HIGH
                                     } else {
@@ -222,7 +250,8 @@ fun TodoLeLoupApp() {
                                                 title = newTitle,
                                                 priority = updatedPriority,
                                                 deadlineDate = deadlineDate,
-                                                deadlineTime = deadlineTime
+                                                deadlineTime = deadlineTime,
+                                                recurrence = newRecurrence
                                             )
                                         } else {
                                             task

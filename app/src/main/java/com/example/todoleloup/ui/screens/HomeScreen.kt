@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.todoleloup.R
 import com.example.todoleloup.data.Priority
+import com.example.todoleloup.data.RecurrenceType
 import com.example.todoleloup.data.Task
 import com.example.todoleloup.data.TaskStatus
 import com.example.todoleloup.ui.theme.*
@@ -60,11 +61,20 @@ fun HomeScreen(
     var showNotifications by remember { mutableStateOf(true) }
     var celebrateTrigger by remember { mutableStateOf(0) }
 
+    val today = java.time.LocalDate.now()
+
+    // Une tâche est "visible aujourd'hui" si elle est DONE, ou si sa deadline est <= aujourd'hui, ou si elle n'a pas de deadline
+    fun Task.isVisibleToday(): Boolean {
+        if (status == TaskStatus.DONE) return true
+        if (deadlineDate == null) return true
+        return !deadlineDate.isAfter(today)
+    }
+
     val filteredTasks = when (selectedFilter) {
-        1 -> tasks.filter { it.status == TaskStatus.TODO }
+        1 -> tasks.filter { it.status == TaskStatus.TODO && it.isVisibleToday() }
         2 -> tasks.filter { it.isUrgent() }
         3 -> tasks.filter { it.status == TaskStatus.DONE }
-        else -> tasks
+        else -> tasks.filter { it.isVisibleToday() }
     }
 
     // Récupérer les tâches en retard
@@ -666,6 +676,31 @@ fun TaskItem(
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                fontFamily = irishGroverFont
+                            )
+                        }
+                    }
+
+                    // Badge de périodicité
+                    if (task.recurrence != RecurrenceType.NONE) {
+                        val recurrenceLabel = when (task.recurrence) {
+                            RecurrenceType.DAILY -> "↻ /jour"
+                            RecurrenceType.WEEKLY -> "↻ /sem"
+                            RecurrenceType.MONTHLY -> "↻ /mois"
+                            else -> ""
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.Transparent,
+                            border = BorderStroke(2.dp, CyanPrimary),
+                            modifier = Modifier.wrapContentWidth()
+                        ) {
+                            Text(
+                                text = recurrenceLabel,
+                                color = CyanPrimary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 fontFamily = irishGroverFont
                             )
                         }

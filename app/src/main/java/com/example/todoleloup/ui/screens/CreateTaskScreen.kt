@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.todoleloup.data.RecurrenceType
 import com.example.todoleloup.ui.theme.irishGroverFont
 import com.example.todoleloup.ui.theme.*
 import java.time.LocalDate
@@ -44,12 +45,14 @@ fun isValidTime(timeStr: String): Boolean {
 @Composable
 fun CreateTaskScreen(
     onNavigateBack: () -> Unit,
-    onTaskCreated: (String, String, String, Boolean) -> Unit
+    onTaskCreated: (String, String, String, Boolean, RecurrenceType) -> Unit
 ) {
     var taskTitle by remember { mutableStateOf("") }
     var dueDateText by remember { mutableStateOf("") }
     var dueTimeText by remember { mutableStateOf("") }
     var isUrgent by remember { mutableStateOf(false) }
+    var selectedRecurrence by remember { mutableStateOf(RecurrenceType.NONE) }
+    var recurrenceMenuExpanded by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -202,6 +205,56 @@ fun CreateTaskScreen(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Sélecteur de périodicité
+                Text(
+                    text = "PÉRIODICITÉ",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Box {
+                    OutlinedButton(
+                        onClick = { recurrenceMenuExpanded = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, TextSecondary),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = when (selectedRecurrence) {
+                                RecurrenceType.NONE -> "Aucune"
+                                RecurrenceType.DAILY -> "Quotidienne"
+                                RecurrenceType.WEEKLY -> "Hebdomadaire"
+                                RecurrenceType.MONTHLY -> "Mensuelle"
+                            },
+                            fontFamily = irishGroverFont,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(text = "▾", color = TextSecondary)
+                    }
+                    DropdownMenu(
+                        expanded = recurrenceMenuExpanded,
+                        onDismissRequest = { recurrenceMenuExpanded = false }
+                    ) {
+                        listOf(
+                            RecurrenceType.NONE to "Aucune",
+                            RecurrenceType.DAILY to "Quotidienne",
+                            RecurrenceType.WEEKLY to "Hebdomadaire",
+                            RecurrenceType.MONTHLY to "Mensuelle"
+                        ).forEach { (type, label) ->
+                            DropdownMenuItem(
+                                text = { Text(label, fontFamily = irishGroverFont) },
+                                onClick = {
+                                    selectedRecurrence = type
+                                    recurrenceMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
@@ -227,7 +280,7 @@ fun CreateTaskScreen(
                                 // L'heure est optionnelle, mais si elle est remplie, elle doit être valide
                                 val isTimeValid = dueTimeText.isBlank() || isValidTime(dueTimeText)
                                 if (isTimeValid) {
-                                    onTaskCreated(taskTitle, dueDateText, dueTimeText, isUrgent)
+                                    onTaskCreated(taskTitle, dueDateText, dueTimeText, isUrgent, selectedRecurrence)
                                     onNavigateBack()
                                 }
                             }
