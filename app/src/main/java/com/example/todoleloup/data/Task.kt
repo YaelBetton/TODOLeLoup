@@ -36,11 +36,11 @@ data class Task(
     }
 
     fun isUrgent(): Boolean {
-        // Une tâche est urgente si la date est passée (peu importe la priorité)
+        // Une tâche est urgente si elle est en retard ou marquée urgente.
         if (status == TaskStatus.DONE) {
             return false
         }
-        return isOverdue()
+        return isOverdue() || priority == Priority.HIGH
     }
 }
 
