@@ -13,7 +13,8 @@ data class Task(
     val status: TaskStatus,
     val priority: Priority,
     val recurrence: RecurrenceType,
-    val nextOccurrenceId: Int? = null  // ID de la prochaine occurrence créée lors du cochage
+    val nextOccurrenceId: Int? = null,
+    val rewardClaimed: Boolean = false  // true si les points ont déjà été donnés
 ) {
     fun isOverdue(): Boolean {
         if (status == TaskStatus.DONE) {

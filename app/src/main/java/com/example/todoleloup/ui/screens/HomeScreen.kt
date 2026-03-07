@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
@@ -46,6 +47,7 @@ import com.example.todoleloup.ui.theme.irishGroverFont
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.max
+import com.example.todoleloup.data.BackgroundTheme
 import kotlin.random.Random
 
 @Composable
@@ -55,11 +57,28 @@ fun HomeScreen(
     onToggleTaskCompleted: (Task) -> Unit,
     onEditTask: (Task) -> Unit,
     onDeleteTask: (Task) -> Unit,
-    onClearCompletedTasks: () -> Unit = {}
+    onClearCompletedTasks: () -> Unit = {},
+    points: Int = 0,
+    lastEarnedPoints: Int? = null,
+    onClearLastEarned: () -> Unit = {},
+    activeBackground: BackgroundTheme = BackgroundTheme.DEFAULT
 ) {
     var selectedFilter by remember { mutableStateOf(0) }
     var showNotifications by remember { mutableStateOf(true) }
     var celebrateTrigger by remember { mutableStateOf(0) }
+    var showPointsPopup by remember { mutableStateOf(false) }
+    var popupPoints by remember { mutableStateOf(0) }
+
+    // Déclencher le popup quand on gagne des points
+    LaunchedEffect(lastEarnedPoints) {
+        if (lastEarnedPoints != null && lastEarnedPoints > 0) {
+            popupPoints = lastEarnedPoints
+            showPointsPopup = true
+            kotlinx.coroutines.delay(1800)
+            showPointsPopup = false
+            onClearLastEarned()
+        }
+    }
 
     val today = java.time.LocalDate.now()
 
@@ -89,11 +108,32 @@ fun HomeScreen(
     // Récupérer les tâches en retard
     val overdueTasks = tasks.filter { it.isOverdue() && it.status != TaskStatus.DONE }
 
+    val bgColors = activeBackground.colors
+    val bgModifier = if (bgColors.size >= 2)
+        Modifier.background(Brush.verticalGradient(bgColors))
+    else
+        Modifier.background(bgColors.first())
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
+            .then(bgModifier)
     ) {
+        // Image de fond réelle si disponible
+        if (activeBackground.drawableRes != null) {
+            Image(
+                painter = painterResource(id = activeBackground.drawableRes),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Overlay sombre pour lisibilité
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.45f))
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -104,7 +144,8 @@ fun HomeScreen(
             // Header avec logo, titre et bouton notification
             HeaderSection(
                 overdueTasks = overdueTasks,
-                onToggleNotifications = { showNotifications = !showNotifications }
+                onToggleNotifications = { showNotifications = !showNotifications },
+                points = points
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -224,13 +265,38 @@ fun HomeScreen(
             trigger = celebrateTrigger,
             modifier = Modifier.fillMaxSize()
         )
+
+        // Popup "+X pts" au centre en haut
+        if (showPointsPopup) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 80.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = CyanPrimary
+                ) {
+                    Text(
+                        text = "+$popupPoints 🐾",
+                        color = Color.Black,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = irishGroverFont,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
 fun HeaderSection(
     overdueTasks: List<Task>,
-    onToggleNotifications: () -> Unit
+    onToggleNotifications: () -> Unit,
+    points: Int = 0
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -278,39 +344,64 @@ fun HeaderSection(
             }
         }
 
-        // Bouton notification avec badge
-        Box {
-            IconButton(
-                onClick = onToggleNotifications,
-                modifier = Modifier.size(48.dp)
+        // Badge points + bouton notification
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Badge points
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = DarkSurface
             ) {
-                Icon(
-                    imageVector = Icons.Default.Notifications,
-                    contentDescription = "Notifications",
-                    tint = if (overdueTasks.isNotEmpty()) Color.Red else TextSecondary,
-                    modifier = Modifier.size(28.dp)
-                )
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(text = "🐾", fontSize = 12.sp)
+                    Text(
+                        text = "$points",
+                        color = CyanPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = irishGroverFont
+                    )
+                }
             }
 
-            // Badge avec le nombre de notifications
-            if (overdueTasks.isNotEmpty()) {
-                Surface(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .align(Alignment.TopEnd),
-                    shape = CircleShape,
-                    color = Color.Red
+            // Bouton notification avec badge
+            Box {
+                IconButton(
+                    onClick = onToggleNotifications,
+                    modifier = Modifier.size(48.dp)
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Notifications",
+                        tint = if (overdueTasks.isNotEmpty()) Color.Red else TextSecondary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                if (overdueTasks.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .align(Alignment.TopEnd),
+                        shape = CircleShape,
+                        color = Color.Red
                     ) {
-                        Text(
-                            text = overdueTasks.size.toString(),
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text(
+                                text = overdueTasks.size.toString(),
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }

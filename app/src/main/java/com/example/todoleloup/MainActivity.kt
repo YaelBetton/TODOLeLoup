@@ -14,10 +14,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todoleloup.data.Priority
 import com.example.todoleloup.data.RecurrenceType
 import com.example.todoleloup.data.TaskStatus
 import com.example.todoleloup.data.Task
+import com.example.todoleloup.data.pointsForPriority
 import com.example.todoleloup.ui.navigation.Screen
 import com.example.todoleloup.ui.screens.CreateTaskScreen
 import com.example.todoleloup.ui.screens.EditTaskScreen
@@ -46,6 +48,7 @@ fun TodoLeLoupApp() {
     var selectedTab by remember { mutableStateOf(0) }
     var tasks by remember { mutableStateOf(listOf<Task>()) }
     var editingTaskId by remember { mutableStateOf<Int?>(null) }
+    val rewardViewModel: RewardViewModel = viewModel()
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -83,8 +86,6 @@ fun TodoLeLoupApp() {
 
                                 if (taskToToggle.status == TaskStatus.DONE) {
                                     // Décocher → repasse en TODO
-                                    // Supprimer la prochaine occurrence SEULEMENT si elle est encore dans le futur
-                                    // (si elle est pour aujourd'hui ou avant, elle est déjà "arrivée" → on la garde)
                                     val nextOccurrence = tasks.find { it.id == taskToToggle.nextOccurrenceId }
                                     val shouldDeleteNext = nextOccurrence != null
                                         && nextOccurrence.deadlineDate != null
@@ -98,11 +99,14 @@ fun TodoLeLoupApp() {
                                             else task
                                         }
                                 } else {
-                                    // Cocher
+                                    // Cocher → gagner des points une seule fois
+                                    if (!taskToToggle.rewardClaimed) {
+                                        rewardViewModel.addPoints(pointsForPriority(taskToToggle.priority))
+                                    }
+
                                     if (taskToToggle.recurrence != RecurrenceType.NONE
                                         && taskToToggle.deadlineDate != null
                                         && !taskToToggle.deadlineDate.isAfter(today)) {
-                                        // Tâche récurrente dont la date est passée/aujourd'hui
                                         val nextDate = when (taskToToggle.recurrence) {
                                             RecurrenceType.DAILY -> taskToToggle.deadlineDate.plusDays(1)
                                             RecurrenceType.WEEKLY -> taskToToggle.deadlineDate.plusWeeks(1)
@@ -110,8 +114,6 @@ fun TodoLeLoupApp() {
                                             else -> null
                                         }
                                         if (nextDate != null) {
-                                            // Vérifier qu'une occurrence pour cette date n'existe pas déjà
-                                            // (peu importe son statut DONE/TODO)
                                             val alreadyExists = tasks.any { t ->
                                                 t.id != taskToToggle.id
                                                 && t.title == taskToToggle.title
@@ -124,33 +126,32 @@ fun TodoLeLoupApp() {
                                                     id = nextId,
                                                     status = TaskStatus.TODO,
                                                     deadlineDate = nextDate,
-                                                    nextOccurrenceId = null
+                                                    nextOccurrenceId = null,
+                                                    rewardClaimed = false
                                                 )
                                                 tasks = tasks.map { task ->
                                                     if (task.id == taskToToggle.id)
-                                                        task.copy(status = TaskStatus.DONE, nextOccurrenceId = nextId)
+                                                        task.copy(status = TaskStatus.DONE, nextOccurrenceId = nextId, rewardClaimed = true)
                                                     else task
                                                 } + nextOccurrence
                                             } else {
-                                                // L'occurrence existe déjà, on coche juste la tâche actuelle
                                                 tasks = tasks.map { task ->
                                                     if (task.id == taskToToggle.id)
-                                                        task.copy(status = TaskStatus.DONE, nextOccurrenceId = null)
+                                                        task.copy(status = TaskStatus.DONE, nextOccurrenceId = null, rewardClaimed = true)
                                                     else task
                                                 }
                                             }
                                         } else {
                                             tasks = tasks.map { task ->
                                                 if (task.id == taskToToggle.id)
-                                                    task.copy(status = TaskStatus.DONE)
+                                                    task.copy(status = TaskStatus.DONE, rewardClaimed = true)
                                                 else task
                                             }
                                         }
                                     } else {
-                                        // Tâche normale ou récurrente dans le futur → DONE simplement
                                         tasks = tasks.map { task ->
                                             if (task.id == taskToToggle.id)
-                                                task.copy(status = TaskStatus.DONE)
+                                                task.copy(status = TaskStatus.DONE, rewardClaimed = true)
                                             else task
                                         }
                                     }
@@ -165,7 +166,11 @@ fun TodoLeLoupApp() {
                             },
                             onClearCompletedTasks = {
                                 tasks = tasks.filter { it.status != TaskStatus.DONE }
-                            }
+                            },
+                            points = rewardViewModel.points,
+                            lastEarnedPoints = rewardViewModel.lastEarnedPoints,
+                            onClearLastEarned = { rewardViewModel.clearLastEarned() },
+                            activeBackground = rewardViewModel.activeBackground
                         )
                     }
                     Screen.CreateTask -> {
@@ -287,7 +292,12 @@ fun TodoLeLoupApp() {
                         }
                     }
                     Screen.Shop -> {
-                        ShopScreen()
+                        ShopScreen(
+                            points = rewardViewModel.points,
+                            activeBackground = rewardViewModel.activeBackground,
+                            unlockedBackgrounds = rewardViewModel.unlockedBackgrounds,
+                            onBuyOrActivate = { theme -> rewardViewModel.buyBackground(theme) }
+                        )
                     }
                 }
             }
