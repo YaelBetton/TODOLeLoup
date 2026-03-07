@@ -95,6 +95,12 @@ fun TodoLeLoupApp() {
                             onEditTask = { taskToEdit ->
                                 editingTaskId = taskToEdit.id
                                 currentScreen = Screen.EditTask
+                            },
+                            onDeleteTask = { taskToDelete ->
+                                tasks = tasks.filter { it.id != taskToDelete.id }
+                            },
+                            onClearCompletedTasks = {
+                                tasks = tasks.filter { it.status != TaskStatus.DONE }
                             }
                         )
                     }

@@ -52,7 +52,9 @@ fun HomeScreen(
     onNavigateToCreateTask: () -> Unit,
     tasks: List<Task>,
     onToggleTaskCompleted: (Task) -> Unit,
-    onEditTask: (Task) -> Unit
+    onEditTask: (Task) -> Unit,
+    onDeleteTask: (Task) -> Unit,
+    onClearCompletedTasks: () -> Unit = {}
 ) {
     var selectedFilter by remember { mutableStateOf(0) }
     var showNotifications by remember { mutableStateOf(true) }
@@ -110,13 +112,40 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Liste des tâches
-            Text(
-                text = "Liste des tâches",
-                color = TextSecondary,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(bottom = 16.dp),
-                fontFamily = irishGroverFont
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Liste des tâches",
+                    color = TextSecondary,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    fontFamily = irishGroverFont
+                )
+                val doneTasks = tasks.filter { it.status == TaskStatus.DONE }
+                if (doneTasks.isNotEmpty()) {
+                        TextButton(
+                        onClick = onClearCompletedTasks,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = TextSecondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Effacer les tâches effectuées (${doneTasks.size})",
+                            color = TextSecondary,
+                            fontSize = 12.sp,
+                            fontFamily = irishGroverFont
+                        )
+                    }
+                }
+            }
 
             if (filteredTasks.isEmpty()) {
                 Box(
@@ -137,6 +166,7 @@ fun HomeScreen(
                     tasks = filteredTasks,
                     onToggleTaskCompleted = onToggleTaskCompleted,
                     onEditTask = onEditTask,
+                    onDeleteTask = onDeleteTask,
                     onTaskCompleted = { celebrateTrigger += 1 }
                 )
             }
@@ -465,6 +495,7 @@ fun TaskList(
     tasks: List<Task>,
     onToggleTaskCompleted: (Task) -> Unit,
     onEditTask: (Task) -> Unit,
+    onDeleteTask: (Task) -> Unit,
     onTaskCompleted: () -> Unit
 ) {
     LazyColumn(
@@ -475,6 +506,7 @@ fun TaskList(
                 task = task,
                 onToggleTaskCompleted = onToggleTaskCompleted,
                 onEditTask = onEditTask,
+                onDeleteTask = onDeleteTask,
                 onTaskCompleted = onTaskCompleted
             )
         }
@@ -486,9 +518,11 @@ fun TaskItem(
     task: Task,
     onToggleTaskCompleted: (Task) -> Unit,
     onEditTask: (Task) -> Unit,
+    onDeleteTask: (Task) -> Unit,
     onTaskCompleted: () -> Unit
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var previousStatus by remember(task.id) { mutableStateOf(task.status) }
 
     LaunchedEffect(task.status) {
@@ -662,7 +696,61 @@ fun TaskItem(
                             onEditTask(task)
                         }
                     )
+                    DropdownMenuItem(
+                        text = { Text("Supprimer", color = Color.Red) },
+                        onClick = {
+                            isMenuExpanded = false
+                            showDeleteDialog = true
+                        }
+                    )
                 }
+            }
+
+            // Dialogue de confirmation de suppression
+            if (showDeleteDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    containerColor = CardBackground,
+                    titleContentColor = Color.White,
+                    textContentColor = TextSecondary,
+                    title = {
+                        Text(
+                            text = "Supprimer la tâche ?",
+                            fontFamily = impactFont,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = "\"${task.title}\" sera définitivement supprimée.",
+                            fontFamily = irishGroverFont
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showDeleteDialog = false
+                                onDeleteTask(task)
+                            }
+                        ) {
+                            Text(
+                                text = "Supprimer",
+                                color = Color.Red,
+                                fontFamily = impactFont,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteDialog = false }) {
+                            Text(
+                                text = "Annuler",
+                                color = CyanPrimary,
+                                fontFamily = irishGroverFont
+                            )
+                        }
+                    }
+                )
             }
         }
     }
