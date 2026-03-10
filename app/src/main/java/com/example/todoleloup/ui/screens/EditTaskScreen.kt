@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +19,9 @@ import com.example.todoleloup.data.Priority
 import com.example.todoleloup.data.RecurrenceType
 import com.example.todoleloup.ui.theme.*
 import com.example.todoleloup.ui.theme.irishGroverFont
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 // Fonction pour valider le format de la date
@@ -61,6 +64,73 @@ fun EditTaskScreen(
     var selectedRecurrence by remember { mutableStateOf(initialRecurrence) }
     var recurrenceMenuExpanded by remember { mutableStateOf(false) }
 
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    // DatePickerDialog Material3
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = if (isValidDateEdit(dueDateText)) {
+                val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                LocalDate.parse(dueDateText, formatter)
+                    .atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
+            } else {
+                System.currentTimeMillis()
+            }
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val date = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.of("UTC")).toLocalDate()
+                        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                        dueDateText = date.format(formatter)
+                    }
+                    showDatePicker = false
+                }) { Text("OK", color = CyanPrimary, fontFamily = irishGroverFont) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Annuler", color = TextSecondary, fontFamily = irishGroverFont)
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    // TimePickerDialog Material3
+    if (showTimePicker) {
+        val initialHour = if (isValidTimeEdit(dueTimeText)) dueTimeText.split(":")[0].toInt() else java.time.LocalTime.now().hour
+        val initialMinute = if (isValidTimeEdit(dueTimeText)) dueTimeText.split(":")[1].toInt() else 0
+        val timePickerState = rememberTimePickerState(
+            initialHour = initialHour,
+            initialMinute = initialMinute,
+            is24Hour = true
+        )
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    dueTimeText = "%02d:%02d".format(timePickerState.hour, timePickerState.minute)
+                    showTimePicker = false
+                }) { Text("OK", color = CyanPrimary, fontFamily = irishGroverFont) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("Annuler", color = TextSecondary, fontFamily = irishGroverFont)
+                }
+            },
+            title = { Text("Choisir l'heure", color = TextPrimary, fontFamily = irishGroverFont) },
+            containerColor = CardBackground,
+            text = {
+                TimePicker(state = timePickerState)
+            }
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -85,23 +155,14 @@ fun EditTaskScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text = "TITRE",
-                    color = TextSecondary,
-                    fontSize = 12.sp
-                )
+                Text(text = "TITRE", color = TextSecondary, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(6.dp))
 
                 OutlinedTextField(
                     value = taskTitle,
                     onValueChange = { taskTitle = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = {
-                        Text(
-                            text = "Ex: Tuer le dragon...",
-                            color = TextSecondary
-                        )
-                    },
+                    placeholder = { Text(text = "Ex: Tuer le dragon...", color = TextSecondary) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = CyanPrimary,
                         unfocusedBorderColor = TextSecondary,
@@ -118,28 +179,23 @@ fun EditTaskScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "DATE LIMITE",
-                            color = TextSecondary,
-                            fontSize = 12.sp
-                        )
+                    // DATE
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "DATE LIMITE", color = TextSecondary, fontSize = 12.sp)
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
                             value = dueDateText,
                             onValueChange = { dueDateText = it },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = {
-                                Text(text = "jj/mm/aaaa", color = TextSecondary)
-                            },
+                            placeholder = { Text(text = "jj/mm/aaaa", color = TextSecondary) },
                             trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.DateRange,
-                                    contentDescription = "Date",
-                                    tint = TextSecondary
-                                )
+                                IconButton(onClick = { showDatePicker = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.DateRange,
+                                        contentDescription = "Ouvrir calendrier",
+                                        tint = CyanPrimary
+                                    )
+                                }
                             },
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
@@ -153,28 +209,23 @@ fun EditTaskScreen(
                         )
                     }
 
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "HEURE",
-                            color = TextSecondary,
-                            fontSize = 12.sp
-                        )
+                    // HEURE
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = "HEURE", color = TextSecondary, fontSize = 12.sp)
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
                             value = dueTimeText,
                             onValueChange = { dueTimeText = it },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = {
-                                Text(text = "--:--", color = TextSecondary)
-                            },
+                            placeholder = { Text(text = "--:--", color = TextSecondary) },
                             trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.DateRange,
-                                    contentDescription = "Heure",
-                                    tint = TextSecondary
-                                )
+                                IconButton(onClick = { showTimePicker = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.AccessTime,
+                                        contentDescription = "Ouvrir horloge",
+                                        tint = CyanPrimary
+                                    )
+                                }
                             },
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
@@ -191,11 +242,7 @@ fun EditTaskScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "PRIORITÉ",
-                    color = TextSecondary,
-                    fontSize = 12.sp
-                )
+                Text(text = "PRIORITÉ", color = TextSecondary, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -228,12 +275,7 @@ fun EditTaskScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Sélecteur de périodicité
-                Text(
-                    text = "PÉRIODICITÉ",
-                    color = TextSecondary,
-                    fontSize = 12.sp
-                )
+                Text(text = "PÉRIODICITÉ", color = TextSecondary, fontSize = 12.sp)
                 Spacer(modifier = Modifier.height(6.dp))
                 Box {
                     OutlinedButton(
@@ -284,9 +326,7 @@ fun EditTaskScreen(
                 ) {
                     Button(
                         onClick = onNavigateBack,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
+                        modifier = Modifier.weight(1f).height(48.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = DarkSurface,
                             contentColor = TextPrimary
@@ -298,7 +338,6 @@ fun EditTaskScreen(
                     Button(
                         onClick = {
                             if (taskTitle.isNotBlank() && dueDateText.isNotBlank() && isValidDateEdit(dueDateText)) {
-                                // L'heure est optionnelle, mais si elle est remplie, elle doit être valide
                                 val isTimeValid = dueTimeText.isBlank() || isValidTimeEdit(dueTimeText)
                                 if (isTimeValid) {
                                     onTaskUpdated(taskTitle, dueDateText, dueTimeText, selectedPriority, selectedRecurrence)
@@ -306,9 +345,7 @@ fun EditTaskScreen(
                                 }
                             }
                         },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
+                        modifier = Modifier.weight(1f).height(48.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = CyanPrimary,
                             contentColor = Color.Black
