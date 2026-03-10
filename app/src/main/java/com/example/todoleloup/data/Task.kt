@@ -14,7 +14,8 @@ data class Task(
     val priority: Priority,
     val recurrence: RecurrenceType,
     val nextOccurrenceId: Int? = null,
-    val rewardClaimed: Boolean = false  // true si les points ont déjà été donnés
+    val rewardClaimed: Boolean = false,  // true si les points ont déjà été donnés
+    val photoUri: String? = null         // URI de la photo jointe
 ) {
     fun isOverdue(): Boolean {
         if (status == TaskStatus.DONE) {

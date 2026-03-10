@@ -175,41 +175,26 @@ fun TodoLeLoupApp() {
                     }
                     Screen.CreateTask -> {
                         CreateTaskScreen(
-                            onNavigateBack = {
-                                currentScreen = Screen.Home
-                            },
-                            onTaskCreated = { title, dateStr, timeStr, priority, recurrence ->
-                                // Parsez la date (format jj/mm/aaaa)
+                            onNavigateBack = { currentScreen = Screen.Home },
+                            onTaskCreated = { title, description, dateStr, timeStr, priority, recurrence, photoUri ->
                                 var deadlineDate: LocalDate? = null
                                 var deadlineTime: LocalTime? = null
-
                                 if (dateStr.isNotBlank()) {
-                                    try {
-                                        val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-                                        deadlineDate = LocalDate.parse(dateStr, dateFormatter)
-                                    } catch (e: Exception) {
-                                        // Format invalide, ignore
-                                    }
+                                    try { deadlineDate = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("dd/MM/yyyy")) } catch (e: Exception) {}
                                 }
-
                                 if (timeStr.isNotBlank()) {
-                                    try {
-                                        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-                                        deadlineTime = LocalTime.parse(timeStr, timeFormatter)
-                                    } catch (e: Exception) {
-                                        // Format invalide, ignore
-                                    }
+                                    try { deadlineTime = LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm")) } catch (e: Exception) {}
                                 }
-
                                 val newTask = Task(
                                     id = if (tasks.isEmpty()) 1 else tasks.maxOf { it.id } + 1,
                                     title = title,
-                                    description = "",
+                                    description = description,
                                     deadlineDate = deadlineDate,
                                     deadlineTime = deadlineTime,
                                     status = TaskStatus.TODO,
                                     priority = priority,
-                                    recurrence = recurrence
+                                    recurrence = recurrence,
+                                    photoUri = photoUri
                                 )
                                 tasks = tasks + newTask
                             }
@@ -241,51 +226,33 @@ fun TodoLeLoupApp() {
 
                             EditTaskScreen(
                                 initialTitle = taskToEdit.title,
+                                initialDescription = taskToEdit.description,
                                 initialPriority = taskToEdit.priority,
                                 initialDeadlineDate = initialDateStr,
                                 initialDeadlineTime = initialTimeStr,
                                 initialRecurrence = taskToEdit.recurrence,
+                                initialPhotoUri = taskToEdit.photoUri,
                                 onNavigateBack = {
                                     currentScreen = Screen.Home
                                     editingTaskId = null
                                 },
-                                onTaskUpdated = { newTitle, dateStr, timeStr, newPriority, newRecurrence ->
-                                    // Parser la date (format jj/mm/aaaa)
+                                onTaskUpdated = { newTitle, newDescription, dateStr, timeStr, newPriority, newRecurrence, newPhotoUri ->
                                     var deadlineDate: LocalDate? = null
                                     var deadlineTime: LocalTime? = null
-
                                     if (dateStr.isNotBlank()) {
-                                        try {
-                                            val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-                                            deadlineDate = LocalDate.parse(dateStr, dateFormatter)
-                                        } catch (e: Exception) {
-                                            // Format invalide, garde la date existante
-                                            deadlineDate = taskToEdit.deadlineDate
-                                        }
+                                        try { deadlineDate = LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("dd/MM/yyyy")) }
+                                        catch (e: Exception) { deadlineDate = taskToEdit.deadlineDate }
                                     }
-
                                     if (timeStr.isNotBlank()) {
-                                        try {
-                                            val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-                                            deadlineTime = LocalTime.parse(timeStr, timeFormatter)
-                                        } catch (e: Exception) {
-                                            // Format invalide, garde l'heure existante
-                                            deadlineTime = taskToEdit.deadlineTime
-                                        }
+                                        try { deadlineTime = LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm")) }
+                                        catch (e: Exception) { deadlineTime = taskToEdit.deadlineTime }
                                     }
-
                                     tasks = tasks.map { task ->
-                                        if (task.id == taskToEdit.id) {
-                                            task.copy(
-                                                title = newTitle,
-                                                priority = newPriority,
-                                                deadlineDate = deadlineDate,
-                                                deadlineTime = deadlineTime,
-                                                recurrence = newRecurrence
-                                            )
-                                        } else {
-                                            task
-                                        }
+                                        if (task.id == taskToEdit.id)
+                                            task.copy(title = newTitle, description = newDescription, priority = newPriority,
+                                                deadlineDate = deadlineDate, deadlineTime = deadlineTime,
+                                                recurrence = newRecurrence, photoUri = newPhotoUri)
+                                        else task
                                     }
                                 }
                             )

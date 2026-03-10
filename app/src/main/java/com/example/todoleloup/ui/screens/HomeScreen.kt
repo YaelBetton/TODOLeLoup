@@ -11,6 +11,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -648,23 +649,24 @@ fun TaskItem(
     }
 
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = CardBackground,
         border = if (task.isOverdue()) BorderStroke(2.dp, Color.Red) else null
     ) {
+        Column {
         Row(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 0.dp, end = 0.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Barre de priorité colorée sur le côté gauche
             Box(
                 modifier = Modifier
                     .width(5.dp)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                    .height(80.dp)
+                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = if (task.description.isBlank() && task.photoUri == null) 16.dp else 0.dp))
                     .background(priorityColor)
             )
         Row(
@@ -924,6 +926,39 @@ fun TaskItem(
             }
         } // fin Row interne
         } // fin Row externe (barre priorité)
+
+        // Description et photo si présentes
+        if (task.description.isNotBlank() || task.photoUri != null) {
+            Column(modifier = Modifier.padding(start = 21.dp, end = 16.dp, bottom = 12.dp)) {
+                if (task.description.isNotBlank()) {
+                    Text(
+                        text = task.description,
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        fontFamily = irishGroverFont,
+                        maxLines = 2
+                    )
+                }
+                if (task.photoUri != null) {
+                    if (task.description.isNotBlank()) Spacer(modifier = Modifier.height(8.dp))
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    coil.compose.AsyncImage(
+                        model = coil.request.ImageRequest.Builder(context)
+                            .data(android.net.Uri.parse(task.photoUri))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Photo jointe",
+                        contentScale = androidx.compose.ui.layout.ContentScale.Inside,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 80.dp, max = 300.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .border(BorderStroke(1.dp, CyanPrimary.copy(alpha = 0.5f)), RoundedCornerShape(10.dp))
+                    )
+                }
+            }
+        }
+        } // fin Column Surface
     }
 }
 
