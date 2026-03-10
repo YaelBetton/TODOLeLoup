@@ -80,29 +80,30 @@ fun HomeScreen(
         }
     }
 
-    val today = java.time.LocalDate.now()
-
-    // Une tâche est "visible aujourd'hui" si elle est DONE, ou si sa deadline est <= aujourd'hui, ou si elle n'a pas de deadline
-    fun Task.isVisibleToday(): Boolean {
-        if (status == TaskStatus.DONE) return true
-        if (deadlineDate == null) return true
-        return !deadlineDate.isAfter(today)
-    }
-
     fun priorityOrder(p: Priority) = when (p) {
         Priority.HIGH -> 0
         Priority.MEDIUM -> 1
         Priority.LOW -> 2
     }
 
+    // Trie par date (passé/aujourd'hui d'abord, futur après), puis par priorité
+    fun List<Task>.sortedByDateThenPriority(): List<Task> {
+        return this.sortedWith(
+            compareBy(
+                { it.status == TaskStatus.DONE },
+                { it.deadlineDate ?: java.time.LocalDate.MAX },
+                { priorityOrder(it.priority) }
+            )
+        )
+    }
+
     val filteredTasks = when (selectedFilter) {
-        1 -> tasks.filter { it.status == TaskStatus.TODO && it.isVisibleToday() }
-            .sortedBy { priorityOrder(it.priority) }
+        1 -> tasks.filter { it.status == TaskStatus.TODO }
+            .sortedByDateThenPriority()
         2 -> tasks.filter { it.isUrgent() }
             .sortedBy { priorityOrder(it.priority) }
         3 -> tasks.filter { it.status == TaskStatus.DONE }
-        else -> tasks.filter { it.isVisibleToday() }
-            .sortedWith(compareBy({ it.status == TaskStatus.DONE }, { priorityOrder(it.priority) }))
+        else -> tasks.sortedByDateThenPriority()
     }
 
     // Récupérer les tâches en retard
@@ -775,6 +776,22 @@ fun TaskItem(
                             Text(
                                 text = "EN RETARD",
                                 color = Color.Red,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                fontFamily = irishGroverFont
+                            )
+                        }
+                    } else if (task.deadlineDate != null && task.deadlineDate.isAfter(java.time.LocalDate.now())) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.Transparent,
+                            border = BorderStroke(2.dp, Color(0xFFFF9800)),
+                            modifier = Modifier.wrapContentWidth()
+                        ) {
+                            Text(
+                                text = "À VENIR",
+                                color = Color(0xFFFF9800),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
