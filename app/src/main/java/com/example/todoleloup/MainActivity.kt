@@ -1,9 +1,13 @@
 package com.example.todoleloup
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,21 +17,38 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todoleloup.data.RecurrenceType
 import com.example.todoleloup.data.Task
 import com.example.todoleloup.data.TaskStatus
 import com.example.todoleloup.data.pointsForPriority
+import com.example.todoleloup.notification.NotificationScheduler
 import com.example.todoleloup.ui.navigation.Screen
 import com.example.todoleloup.ui.screens.*
 import com.example.todoleloup.ui.theme.*
 import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* résultat ignoré */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Demander la permission POST_NOTIFICATIONS sur Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
         setContent {
             TodoLeLoupTheme {
                 TodoLeLoupApp()
@@ -111,8 +132,14 @@ fun TodoLeLoupApp() {
     var tasks by remember { mutableStateOf(listOf<Task>()) }
     var editingTaskId by remember { mutableStateOf<Int?>(null) }
     val rewardViewModel: RewardViewModel = viewModel()
+    val context = LocalContext.current
 
     val nextTaskId by derivedStateOf { if (tasks.isEmpty()) 1 else tasks.maxOf { it.id } + 1 }
+
+    // Reprogrammer toutes les alarmes quand la liste de tâches change
+    LaunchedEffect(tasks) {
+        NotificationScheduler.rescheduleAll(context, tasks)
+    }
 
     Surface(modifier = Modifier.fillMaxSize(), color = DarkBackground) {
         Scaffold(
