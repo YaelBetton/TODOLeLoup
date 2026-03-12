@@ -14,7 +14,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,6 +70,7 @@ fun HomeScreen(
     activeBackground: BackgroundTheme = BackgroundTheme.DEFAULT
 ) {
     var selectedFilter by remember { mutableStateOf(0) }
+    var searchQuery by remember { mutableStateOf("") }
     var showNotifications by remember { mutableStateOf(true) }
     var celebrateTrigger by remember { mutableStateOf(0) }
     var showPointsPopup by remember { mutableStateOf(false) }
@@ -98,13 +104,22 @@ fun HomeScreen(
         )
     }
 
-    val filteredTasks = when (selectedFilter) {
+    val filteredByStatus = when (selectedFilter) {
         1 -> tasks.filter { it.status == TaskStatus.TODO }
             .sortedByDateThenPriority()
         2 -> tasks.filter { it.isUrgent() }
             .sortedBy { priorityOrder(it.priority) }
         3 -> tasks.filter { it.status == TaskStatus.DONE }
         else -> tasks.sortedByDateThenPriority()
+    }
+
+    val filteredTasks = if (searchQuery.isBlank()) {
+        filteredByStatus
+    } else {
+        filteredByStatus.filter { task ->
+            task.title.contains(searchQuery, ignoreCase = true) ||
+            task.description.contains(searchQuery, ignoreCase = true)
+        }
     }
 
     // Récupérer les tâches en retard
@@ -161,7 +176,10 @@ fun HomeScreen(
             }
 
             // Barre de recherche
-            SearchBar()
+            SearchBar(
+                query = searchQuery,
+                onQueryChange = { searchQuery = it }
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -180,7 +198,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Liste des tâches",
+                    text = if (searchQuery.isBlank()) "Liste des tâches" else "\"$searchQuery\" · ${filteredTasks.size} résultat(s)",
                     color = TextSecondary,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(bottom = 16.dp),
@@ -488,7 +506,10 @@ fun NotificationBanner(
 }
 
 @Composable
-fun SearchBar() {
+fun SearchBar(
+    query: String = "",
+    onQueryChange: (String) -> Unit = {}
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -505,16 +526,47 @@ fun SearchBar() {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = "Rechercher",
-                tint = TextSecondary,
+                tint = if (query.isBlank()) TextSecondary else CyanPrimary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Rechercher une tâche",
-                color = TextSecondary,
-                fontSize = 16.sp ,
-                fontFamily = irishGroverFont
+            BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontFamily = irishGroverFont
+                ),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = {}),
+                decorationBox = { innerTextField ->
+                    if (query.isEmpty()) {
+                        Text(
+                            text = "Rechercher une tâche...",
+                            color = TextSecondary,
+                            fontSize = 16.sp,
+                            fontFamily = irishGroverFont
+                        )
+                    }
+                    innerTextField()
+                }
             )
+            if (query.isNotBlank()) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Effacer",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
         }
     }
 }
