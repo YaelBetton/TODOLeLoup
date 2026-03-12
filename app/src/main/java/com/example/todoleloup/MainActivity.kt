@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todoleloup.data.RecurrenceType
 import com.example.todoleloup.data.Task
 import com.example.todoleloup.data.TaskStatus
+import com.example.todoleloup.data.TaskStorage
 import com.example.todoleloup.data.pointsForPriority
 import com.example.todoleloup.notification.NotificationScheduler
 import com.example.todoleloup.ui.navigation.Screen
@@ -129,15 +130,18 @@ private fun toggleTaskDone(
 fun TodoLeLoupApp() {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Home) }
     var selectedTab by remember { mutableStateOf(0) }
-    var tasks by remember { mutableStateOf(listOf<Task>()) }
+    val context = LocalContext.current
+
+    // Charger les tâches sauvegardées au premier lancement
+    var tasks by remember { mutableStateOf(TaskStorage.loadTasks(context)) }
     var editingTaskId by remember { mutableStateOf<Int?>(null) }
     val rewardViewModel: RewardViewModel = viewModel()
-    val context = LocalContext.current
 
     val nextTaskId by derivedStateOf { if (tasks.isEmpty()) 1 else tasks.maxOf { it.id } + 1 }
 
-    // Reprogrammer toutes les alarmes quand la liste de tâches change
+    // Sauvegarder + reprogrammer les alarmes à chaque changement de tâches
     LaunchedEffect(tasks) {
+        TaskStorage.saveTasks(context, tasks)
         NotificationScheduler.rescheduleAll(context, tasks)
     }
 
